@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
-from model_interface import ModelInterface
+from models.model_interface import ModelInterface
 
 
 class SarimaModel(ModelInterface):
@@ -29,15 +29,20 @@ class SarimaModel(ModelInterface):
                         seasonal_order=self.seasonal_order,
                         enforce_stationarity=self.enforce_stationarity,
                         enforce_invertibility=self.enforce_invertibility)
-        self.model.train()
+        self.model = self.model.fit(method='cg', disp=0)
 
     def __zero_if_negative(self, value):
         if value < 0:
             return 0
         return value
 
+    def __high_if_negative_mean(self, mean, high):
+        if mean >= 0:
+            return mean
+        return high
+
     def __combine_predictions(self, mean, high):
-        return [self.__zero_if_negative(x, high[ind]) for ind, x in enumerate(mean)]
+        return [self.__zero_if_negative(self.__high_if_negative_mean(x, high[ind])) for ind, x in enumerate(mean)]
 
 
     def predict(self, n_days: int) -> list:
